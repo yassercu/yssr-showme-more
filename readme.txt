@@ -46,6 +46,16 @@ Sí, puedes agregar CSS personalizado desde la página de configuración del plu
 * Diseño minimalista, profesional y destacado para los elementos de costo.
 * Listo para producción.
 
+= 1.2.1 =
+* Fix: Ahora la configuración del plugin se guarda y persiste correctamente.
+* Mejora de experiencia de usuario en la administración.
+
+= 1.2.0 =
+* Nuevo: Si no existe el meta de Cost of Goods (`_alg_wc_cog_cost`), el plugin permite ingresar un costo personalizado por producto y lo muestra en el frontend.
+* Se añade un meta box de "Costo personalizado" en la edición de productos cuando no hay costo de Cost of Goods.
+* Rediseño de la etiqueta de costo en frontend: ahora es minimalista y sigue el estilo Material Design de Google.
+* Mejoras visuales y de compatibilidad.
+
 = 1.1.1 =
 * Eliminados los meta boxes personalizados en la edición de productos.
 * Depuración y optimización del código: se eliminaron métodos y hooks no utilizados para mayor eficiencia.
@@ -67,12 +77,4 @@ Sí, puedes agregar CSS personalizado desde la página de configuración del plu
 * Campos personalizados para productos
 * Visualización en frontend basada en roles
 
-= 1.2.0 =
-* Nuevo: Si no existe el meta de Cost of Goods (`_alg_wc_cog_cost`), el plugin permite ingresar un costo personalizado por producto y lo muestra en el frontend.
-* Se añade un meta box de "Costo personalizado" en la edición de productos cuando no hay costo de Cost of Goods.
-* Rediseño de la etiqueta de costo en frontend: ahora es minimalista y sigue el estilo Material Design de Google.
-* Mejoras visuales y de compatibilidad.
 
-= 1.2.1 =
-* Fix: Ahora la configuración del plugin se guarda y persiste correctamente.
-* Mejora de experiencia de usuario en la administración.
