@@ -64,3 +64,7 @@ Sí, puedes agregar CSS personalizado desde la página de configuración del plu
 * Se añade un meta box de "Costo personalizado" en la edición de productos cuando no hay costo de Cost of Goods.
 * Rediseño de la etiqueta de costo en frontend: ahora es minimalista y sigue el estilo Material Design de Google.
 * Mejoras visuales y de compatibilidad.
+
+= 1.2.1 =
+* Fix: Ahora la configuración del plugin se guarda y persiste correctamente.
+* Mejora de experiencia de usuario en la administración.

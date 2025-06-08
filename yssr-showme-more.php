@@ -3,7 +3,7 @@
  * Plugin Name: yssr showme more
  * Plugin URI: https://encontruci.om
  * Description: Permite mostrar atributos ocultos de productos WooCommerce (como precio de costo) a roles específicos de usuarios.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: CuDev ~ yssr
  * Author URI: https://encontruci.om
  * Text Domain: yssr-showme-more
@@ -31,7 +31,7 @@ add_action(
 );
 
 // Definir constantes del plugin
-define('WC_ROLE_ATTR_VERSION', '1.2.0');
+define('WC_ROLE_ATTR_VERSION', '1.2.1');
 define('WC_ROLE_ATTR_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WC_ROLE_ATTR_PLUGIN_PATH', plugin_dir_path(__FILE__));
 

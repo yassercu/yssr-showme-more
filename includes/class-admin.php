@@ -190,7 +190,7 @@ class WC_Role_Attributes_Admin {
                             <?php _e('Personaliza el estilo visual de la pegatina de costo si lo deseas.', 'wc-role-attributes'); ?>
                         </div>
                     </div>
-                    <button type="submit" class="yssr-admin-submit"><?php _e('Guardar configuración', 'wc-role-attributes'); ?></button>
+                    <button type="submit" name="submit" class="yssr-admin-submit"><?php _e('Guardar configuración', 'wc-role-attributes'); ?></button>
             </form>
             </div>
         </div>
