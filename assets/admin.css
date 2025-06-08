@@ -1,0 +1,18 @@
+.wc-role-attributes-admin {
+    max-width: 800px;
+}
+
+.wc-role-attributes-admin .form-table th {
+    width: 200px;
+}
+
+.wc-role-attributes-admin input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.wc-role-attr-preview {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 4px;
+    margin-top: 10px;
+}

@@ -1,0 +1,2 @@
+# Archivo POT para traducciones
+# Este archivo contendría todas las cadenas de texto para traducir
