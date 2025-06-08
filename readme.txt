@@ -38,6 +38,14 @@ Sí, puedes agregar CSS personalizado desde la página de configuración del plu
 
 == Changelog ==
 
+= 1.3.0 =
+* Integración visual y lógica del costo en el frontend del carrito y checkout.
+* Subtotal de costo de productos mostrado debajo de la lista de productos en el carrito.
+* Total de costo mostrado debajo del total tradicional, sumando correctamente impuestos y envío.
+* Visualización de costos solo para roles permitidos.
+* Diseño minimalista, profesional y destacado para los elementos de costo.
+* Listo para producción.
+
 = 1.1.1 =
 * Eliminados los meta boxes personalizados en la edición de productos.
 * Depuración y optimización del código: se eliminaron métodos y hooks no utilizados para mayor eficiencia.

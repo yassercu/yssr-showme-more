@@ -50,3 +50,91 @@
     font-size: 1em;
     box-shadow: 0 1px 2px rgba(60,64,67,0.06);
 }
+/* NUEVO: Columna y totales de costo en carrito y checkout */
+.wc-role-attr-cost-col {
+    display: inline-block;
+    margin-left: 8px;
+    color: #219150;
+    font-weight: 600;
+    background: #eafaf1;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.98em;
+    box-shadow: 0 1px 2px rgba(33,145,80,0.07);
+}
+.cart-cost-subtotal th,
+.cart-cost-subtotal td,
+.order-cost-total th,
+.order-cost-total td {
+    color: #219150 !important;
+    background: #eafaf1 !important;
+    border-radius: 4px;
+    font-weight: 600;
+    border: none;
+}
+.cart-cost-subtotal th,
+.order-cost-total th {
+    font-weight: 700;
+}
+.cart-cost-subtotal td,
+.order-cost-total td {
+    text-align: right;
+}
+/* Columna de costo en la tabla del carrito */
+.woocommerce-cart table.cart th.product-cost,
+.woocommerce-cart table.cart td.product-cost {
+    display: none !important;
+}
+/* Costo inline en subtotal del carrito */
+.wc-role-attr-cost-inline {
+    display: block;
+    margin-top: 4px;
+    font-size: 1.08em;
+    color: #219150;
+    background: #d2f5e3;
+    border-left: 4px solid #219150;
+    border-radius: 3px;
+    padding: 6px 10px 6px 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-shadow: 0 2px 8px rgba(33,145,80,0.10);
+}
+.wc-role-attr-cost-inline span {
+    font-weight: 900;
+    color: #219150;
+}
+.wc-role-attr-cost-summary {
+    margin: 24px 0 4px 0;
+    padding: 12px 18px;
+    background: #eafaf1;
+    border-left: 5px solid #219150;
+    border-radius: 5px;
+    font-size: 1.13em;
+    font-weight: 700;
+    color: #219150;
+    display: flex;
+    align-items: center;
+    text-align: right;
+    gap: 10px;
+    box-shadow: 0 2px 8px rgba(33,145,80,0.08);
+}
+.wc-role-attr-cost-summary-label {
+    font-weight: 700;
+    color: #219150;
+}
+.wc-role-attr-cost-summary-value {
+    font-weight: 900;
+    color: #219150;
+    margin-left: 8px;
+}
+/* Total de costo resaltado en totales */
+tr.order-cost-total th,
+tr.order-cost-total td {
+    font-size: 1.25em !important;
+    font-weight: 900 !important;
+    border-radius: 7px !important;
+    padding: 14px 18px !important;
+    letter-spacing: 0.01em;
+    border: none !important;
+    border-top: 5px solid #219150 !important;
+}
