@@ -1,34 +1,38 @@
-=== WooCommerce Role-Based Product Attributes ===
-Contributors: tu-usuario
-Tags: woocommerce, roles, attributes, cost-price, wholesale
+=== WooCommerce Role-Based Product Attributes (yssr Showme More) ===
+Contributors: cudev, yssr
+Tags: woocommerce, roles, attributes, cost-price, wholesale, inventory
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Permite mostrar atributos ocultos de productos WooCommerce (como precio de costo) a roles específicos de usuarios.
+Permite mostrar atributos ocultos de productos WooCommerce (como precio de costo) a roles específicos de usuarios, con diseño profesional y código optimizado.
 
-== Description ==
+== Descripción ==
 
-Este plugin permite configurar qué atributos especiales de productos WooCommerce (como precio de costo, proveedor, SKU de proveedor, etc.) son visibles para roles específicos de usuarios.
+Este plugin permite configurar qué atributos especiales de productos WooCommerce (como precio de costo, proveedor, SKU de proveedor, etc.) son visibles para roles específicos de usuarios. Incluye integración con el plugin Cost of Goods, soporte para campos personalizados y visualización avanzada en el frontend y backend.
 
-Características principales:
+**Características principales:**
 * Configuración de roles con acceso a atributos especiales
 * Selección de atributos visibles por rol
 * Campos personalizados para precio de costo, proveedor, etc.
-* Ubicación configurable de visualización
-* CSS personalizable
-* Integración completa con WooCommerce
+* Ubicación configurable de visualización (después del precio, antes del botón, después del resumen)
+* CSS personalizable desde la administración
+* Integración completa con WooCommerce y Cost of Goods
+* Visualización de costos en carrito y checkout solo para roles permitidos
+* Código optimizado, seguro y estandarizado (PSR-12, PHPDoc, tipado)
+* Diseño visual profesional y consistente (Material Design)
+* Listo para traducción y compatible con WPML
 
-== Installation ==
+== Instalación ==
 
-1. Sube los archivos del plugin al directorio `/wp-content/plugins/wc-role-attributes/`
-2. Activa el plugin a través del menú 'Plugins' en WordPress
-3. Ve a WooCommerce > Atributos por Rol para configurar el plugin
+1. Sube los archivos del plugin al directorio `/wp-content/plugins/yssr-showme-more/` o instala el ZIP desde el panel de WordPress.
+2. Activa el plugin desde el menú 'Plugins' en WordPress.
+3. Ve a Productos > yssr Showme More para configurar los roles, atributos y estilos.
 
-== Frequently Asked Questions ==
+== Preguntas Frecuentes ==
 
 = ¿Funciona con todos los temas? =
 Sí, el plugin está diseñado para funcionar con cualquier tema compatible con WooCommerce.
@@ -36,7 +40,20 @@ Sí, el plugin está diseñado para funcionar con cualquier tema compatible con 
 = ¿Puedo personalizar los estilos CSS? =
 Sí, puedes agregar CSS personalizado desde la página de configuración del plugin.
 
+= ¿Qué meta campos de costo soporta? =
+Soporta `_alg_wc_cog_cost` (Cost of Goods), `_yssr_custom_cost` y otros campos comunes de costo.
+
+= ¿El plugin es seguro y eficiente? =
+Sí, el código sigue buenas prácticas, validación y sanitización de datos, y está optimizado para rendimiento y seguridad.
+
 == Changelog ==
+
+= 1.6.0 =
+* Refactorización completa: tipado, visibilidad, PHPDoc y centralización de lógica.
+* Carga condicional de clases admin/frontend para mejor rendimiento.
+* Estandarización visual y de código (PSR-12, arrays cortos, null coalescente).
+* Mejoras en la documentación y ejemplos de uso.
+* Mejoras en la validación y manejo de configuraciones.
 
 = 1.3.0 =
 * Integración visual y lógica del costo en el frontend del carrito y checkout.

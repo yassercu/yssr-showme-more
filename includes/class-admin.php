@@ -5,61 +5,61 @@
 class WC_Role_Attributes_Admin {
     
     public function __construct() {
-        add_action('admin_menu', array($this, 'add_admin_menu'));
-        add_action('admin_init', array($this, 'register_settings'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
-        add_action('add_meta_boxes', array($this, 'add_custom_cost_meta_box'));
-        add_action('save_post_product', array($this, 'save_custom_cost_meta_box'));
+        add_action('admin_menu', [$this, 'add_admin_menu']);
+        add_action('admin_init', [$this, 'register_settings']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
+        add_action('add_meta_boxes', [$this, 'add_custom_cost_meta_box']);
+        add_action('save_post_product', [$this, 'save_custom_cost_meta_box']);
     }
     
     /**
      * Agregar menú de administración
      */
-    public function add_admin_menu() {
+    public function add_admin_menu(): void {
         add_submenu_page(
             'edit.php?post_type=product',
             __('yssr Showme More', 'wc-role-attributes'),
             __('yssr Showme More', 'wc-role-attributes'),
             'manage_woocommerce',
             'wc-role-attributes',
-            array($this, 'admin_page')
+            [$this, 'admin_page']
         );
     }
     
     /**
      * Registrar configuraciones
      */
-    public function register_settings() {
+    public function register_settings(): void {
         register_setting('wc_role_attributes_settings', 'wc_role_attributes_settings');
     }
     
     /**
      * Cargar scripts de administración
      */
-    public function enqueue_admin_scripts($hook) {
+    public function enqueue_admin_scripts($hook): void {
         if ('woocommerce_page_wc-role-attributes' !== $hook) {
             return;
         }
         
-        wp_enqueue_style('wc-role-attr-admin', WC_ROLE_ATTR_PLUGIN_URL . 'assets/admin.css', array(), WC_ROLE_ATTR_VERSION);
-        wp_enqueue_script('wc-role-attr-admin', WC_ROLE_ATTR_PLUGIN_URL . 'assets/admin.js', array('jquery'), WC_ROLE_ATTR_VERSION, true);
+        wp_enqueue_style('wc-role-attr-admin', WC_ROLE_ATTR_PLUGIN_URL . 'assets/admin.css', [], WC_ROLE_ATTR_VERSION);
+        wp_enqueue_script('wc-role-attr-admin', WC_ROLE_ATTR_PLUGIN_URL . 'assets/admin.js', ['jquery'], WC_ROLE_ATTR_VERSION, true);
     }
     
     /**
      * Página de administración (rediseñada)
      */
-    public function admin_page() {
+    public function admin_page(): void {
         $settings = wc_role_attr_get_settings();
         $roles = wp_roles()->get_names();
         $cost_of_goods_active = class_exists('Alg_WC_Cost_of_Goods');
         
         if (isset($_POST['submit']) && wp_verify_nonce($_POST['wc_role_attr_nonce'], 'wc_role_attr_save')) {
-            $new_settings = array(
-                'enabled_roles' => isset($_POST['enabled_roles']) ? array_map('sanitize_text_field', $_POST['enabled_roles']) : array(),
-                'visible_attributes' => isset($_POST['visible_attributes']) ? array_map('sanitize_text_field', $_POST['visible_attributes']) : array(),
+            $new_settings = [
+                'enabled_roles' => isset($_POST['enabled_roles']) ? array_map('sanitize_text_field', $_POST['enabled_roles']) : [],
+                'visible_attributes' => isset($_POST['visible_attributes']) ? array_map('sanitize_text_field', $_POST['visible_attributes']) : [],
                 'display_location' => sanitize_text_field($_POST['display_location']),
                 'custom_css' => sanitize_textarea_field($_POST['custom_css'])
-            );
+            ];
             
             update_option('wc_role_attributes_settings', $new_settings);
             $settings = $new_settings;
@@ -155,7 +155,7 @@ class WC_Role_Attributes_Admin {
                             <?php foreach ($roles as $role_key => $role_name): ?>
                                 <label class="yssr-admin-role">
                                     <input type="checkbox" name="enabled_roles[]" value="<?php echo esc_attr($role_key); ?>" 
-                                           <?php checked(in_array($role_key, isset($settings['enabled_roles']) ? $settings['enabled_roles'] : array())); ?>>
+                                           <?php checked(in_array($role_key, $settings['enabled_roles'] ?? [])); ?>>
                                     <?php echo esc_html($role_name); ?>
                                 </label>
                             <?php endforeach; ?>
@@ -172,20 +172,20 @@ class WC_Role_Attributes_Admin {
                     <div class="yssr-admin-section">
                         <label class="yssr-admin-label" for="display_location"><?php _e('Ubicación de Visualización', 'wc-role-attributes'); ?></label>
                         <select class="yssr-admin-select" name="display_location" id="display_location">
-                                <option value="after_price" <?php selected(isset($settings['display_location']) ? $settings['display_location'] : 'after_price', 'after_price'); ?>>
+                                <option value="after_price" <?php selected(($settings['display_location'] ?? 'after_price'), 'after_price'); ?>>
                                     <?php _e('Después del precio', 'wc-role-attributes'); ?>
                                 </option>
-                                <option value="before_add_to_cart" <?php selected(isset($settings['display_location']) ? $settings['display_location'] : '', 'before_add_to_cart'); ?>>
+                                <option value="before_add_to_cart" <?php selected(($settings['display_location'] ?? ''), 'before_add_to_cart'); ?>>
                                     <?php _e('Antes del botón "Agregar al carrito"', 'wc-role-attributes'); ?>
                                 </option>
-                                <option value="after_summary" <?php selected(isset($settings['display_location']) ? $settings['display_location'] : '', 'after_summary'); ?>>
+                                <option value="after_summary" <?php selected(($settings['display_location'] ?? ''), 'after_summary'); ?>>
                                     <?php _e('Después del resumen', 'wc-role-attributes'); ?>
                                 </option>
                             </select>
                     </div>
                     <div class="yssr-admin-section">
                         <label class="yssr-admin-label" for="custom_css"><?php _e('CSS Personalizado', 'wc-role-attributes'); ?></label>
-                        <textarea class="yssr-admin-textarea" name="custom_css" id="custom_css" rows="4"><?php echo esc_textarea(isset($settings['custom_css']) ? $settings['custom_css'] : ''); ?></textarea>
+                        <textarea class="yssr-admin-textarea" name="custom_css" id="custom_css" rows="4"><?php echo esc_textarea($settings['custom_css'] ?? ''); ?></textarea>
                         <div style="font-size:0.97em;color:#888;margin-top:4px;">
                             <?php _e('Personaliza el estilo visual de la pegatina de costo si lo deseas.', 'wc-role-attributes'); ?>
                         </div>
@@ -197,18 +197,24 @@ class WC_Role_Attributes_Admin {
         <?php
     }
     
-    public function add_custom_cost_meta_box() {
+    /**
+     * Agrega el metabox de costo personalizado
+     */
+    public function add_custom_cost_meta_box(): void {
         add_meta_box(
             'yssr_custom_cost',
             __('Costo Personalizado (yssr Showme More)', 'wc-role-attributes'),
-            array($this, 'render_custom_cost_meta_box'),
+            [$this, 'render_custom_cost_meta_box'],
             'product',
             'side',
             'default'
         );
     }
     
-    public function render_custom_cost_meta_box($post) {
+    /**
+     * Renderiza el metabox de costo personalizado
+     */
+    public function render_custom_cost_meta_box($post): void {
         $cog_cost = get_post_meta($post->ID, '_alg_wc_cog_cost', true);
         $custom_cost = get_post_meta($post->ID, '_yssr_custom_cost', true);
         if ($cog_cost !== '' && $cog_cost !== false) {
@@ -221,7 +227,10 @@ class WC_Role_Attributes_Admin {
         echo '<p style="color:#888;font-size:0.97em;">' . __('Este valor solo se usará si no existe un costo definido por el plugin Cost of Goods.', 'wc-role-attributes') . '</p>';
     }
     
-    public function save_custom_cost_meta_box($post_id) {
+    /**
+     * Guarda el metadato de costo personalizado
+     */
+    public function save_custom_cost_meta_box($post_id): void {
         if (!isset($_POST['yssr_custom_cost_nonce']) || !wp_verify_nonce($_POST['yssr_custom_cost_nonce'], 'yssr_custom_cost_save')) {
             return;
         }

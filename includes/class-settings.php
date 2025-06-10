@@ -10,8 +10,9 @@ class WC_Role_Attributes_Settings {
     
     /**
      * Obtener configuración por defecto
+     * @return array
      */
-    public static function get_default_settings() {
+    public static function get_default_settings(): array {
         return array(
             'enabled_roles' => array('administrator'),
             'visible_attributes' => array('_alg_wc_cog_cost'),
@@ -22,8 +23,10 @@ class WC_Role_Attributes_Settings {
     
     /**
      * Validar configuraciones
+     * @param array $settings
+     * @return array
      */
-    public static function validate_settings($settings) {
+    public static function validate_settings(array $settings): array {
         $available_roles = array_keys(wp_roles()->get_names());
         $settings['enabled_roles'] = array_intersect($settings['enabled_roles'], $available_roles);
         // Solo permitir el atributo de costo
