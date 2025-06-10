@@ -48,6 +48,13 @@ Sí, el código sigue buenas prácticas, validación y sanitización de datos, y
 
 == Changelog ==
 
+= 1.6.1 =
+* Actualizada la interfaz de administración con notificaciones modernas
+* Reemplazo de alertas nativas por un sistema de notificaciones personalizado
+* Mejora en la experiencia de usuario al recalcular costos
+* Corrección de errores menores en la visualización de costos
+* Actualización de documentación y guía de usuario
+
 = 1.6.0 =
 * Refactorización completa: tipado, visibilidad, PHPDoc y centralización de lógica.
 * Carga condicional de clases admin/frontend para mejor rendimiento.

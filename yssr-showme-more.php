@@ -1,19 +1,23 @@
 <?php
 /**
- * Plugin Name: yssr showme more
- * Plugin URI: https://encontruci.om 
- * Description: Permite mostrar atributos ocultos de productos WooCommerce (como precio de costo) a roles específicos de usuarios.
- * Version: 1.6.0
- * Author: CuDev ~ yssr
- * Author URI: https://encontruci.om 
+ * Plugin Name: YSSR Show Me More
+ * Plugin URI: https://www.yssr.com/plugins/yssr-showme-more
+ * Description: Muestra atributos ocultos de productos WooCommerce a roles específicos, calcula costos de pedidos y proporciona una interfaz de administración mejorada.
+ * Version: 1.6.1
+ * Author: YSSR Team
+ * Author URI: https://www.yssr.com
  * Text Domain: yssr-showme-more
  * Domain Path: /languages
- * Requires at least: 5.0
- * Tested up to: 6.4
+ * Requires at least: 5.8
+ * Requires PHP: 7.4
  * WC requires at least: 5.0
  * WC tested up to: 8.0
- * License: GPL v2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html 
+ * License: GPL v3 or later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
+ * 
+ * @package YSSR_ShowMeMore
+ * @category WooCommerce
+ * @author YSSR Team
  */
 // Prevenir acceso directo
 if (!defined('ABSPATH')) {
@@ -28,7 +32,7 @@ add_action(
     }
 );
 // Definir constantes del plugin
-define('WC_ROLE_ATTR_VERSION', '1.6.0');
+define('WC_ROLE_ATTR_VERSION', '1.6.1');
 define('WC_ROLE_ATTR_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WC_ROLE_ATTR_PLUGIN_PATH', plugin_dir_path(__FILE__));
 /**
@@ -211,11 +215,13 @@ class WC_Role_Attributes_Plugin {
         echo '<h4 style="margin: 0 0 10px 0; color: #ff9800;">📊 Información de Costos YSSR</h4>';
         if (is_numeric($total_costo)) {
             echo '<p><strong>Total de Costo:</strong> <span style="font-size: 18px; color: #ff9800; font-weight: bold;">' . wc_price($total_costo) . '</span></p>';
+        echo '<button type="button" class="button button-small" onclick="yssr_recalculate_cost(' . $order->get_id() . ', this)" style="margin-right: 10px;">🔄 Recalcular Costo</button>';
             if (!empty($fecha_calculo)) echo '<p><small><strong>Calculado el:</strong> ' . date_i18n('d/m/Y H:i:s', strtotime($fecha_calculo)) . '</small></p>';
         } else {
             echo '<p><strong>Total de Costo:</strong> <span style="color: #999;">No calculado</span></p>';
+        echo '<button type="button" class="button button-small" onclick="yssr_recalculate_cost(' . $order->get_id() . ', this)" style="margin-right: 10px;">🔄 Recalcular Costo</button>';
         }
-        echo '<button type="button" class="button button-small" onclick="yssr_recalculate_cost(' . $order->get_id() . ')" style="margin-right: 10px;">🔄 Recalcular Costo</button>';
+
         if (!empty($detalles) && is_array($detalles)) {
             echo '<button type="button" class="button button-small" onclick="yssr_toggle_details()">👁 Ver Detalles</button>';
             echo '<div id="yssr-cost-details" style="display: none; margin-top: 15px; max-height: 200px; overflow-y: auto; background: #fff; padding: 10px; border-radius: 4px;">';
@@ -230,20 +236,250 @@ class WC_Role_Attributes_Plugin {
         }
         echo '</div>';
         ?>
-        <script type="text/javascript">
-        function yssr_recalculate_cost(order_id) {
-            if (confirm('¿Recalcular el total de costo para este pedido?\nEsto sobrescribirá los valores actuales.')) {
-                const button = event.target; button.disabled = true; button.textContent = '⏳ Calculando...';
-                jQuery.post(ajaxurl, {
-                    action: 'yssr_recalculate_order_cost', order_id: order_id, nonce: '<?php echo wp_create_nonce("yssr_recalc_nonce"); ?>'
-                }, function(response) {
-                    if (response.success) { alert('✓ Costo recalculado correctamente.'); location.reload(); } 
-                    else { alert('❌ Error: ' + response.data); button.disabled = false; button.textContent = '🔄 Recalcular Costo'; }
-                }).fail(function() {
-                    alert('❌ Error de conexión con el servidor.'); button.disabled = false; button.textContent = '🔄 Recalcular Costo';
-                });
+        <style>
+            .yssr-notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 5px;
+                color: white;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 999999;
+                display: flex;
+                align-items: center;
+                transform: translateX(120%);
+                transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+                max-width: 350px;
+                opacity: 0;
+                pointer-events: auto;
             }
+            .yssr-notification.show {
+                transform: translateX(0);
+            }
+            .yssr-notification.success {
+                background-color: #4caf50;
+                border-left: 5px solid #388e3c;
+            }
+            .yssr-notification.error {
+                background-color: #f44336;
+                border-left: 5px solid #d32f2f;
+            }
+            .yssr-notification.warning {
+                background-color: #ff9800;
+                border-left: 5px solid #f57c00;
+            }
+            .yssr-notification i {
+                margin-right: 10px;
+                font-size: 20px;
+            }
+            .yssr-notification .close-btn {
+                margin-left: 15px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 18px;
+                opacity: 0.8;
+            }
+            .yssr-notification .close-btn:hover {
+                opacity: 1;
+            }
+            .yssr-confirm-dialog {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 10000;
+                justify-content: center;
+                align-items: center;
+            }
+            .yssr-confirm-content {
+                background: white;
+                padding: 25px;
+                border-radius: 8px;
+                max-width: 400px;
+                width: 90%;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            }
+            .yssr-confirm-buttons {
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 20px;
+                gap: 10px;
+            }
+            .yssr-confirm-buttons button {
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: 500;
+            }
+            .yssr-confirm-cancel {
+                background-color: #f5f5f5;
+            }
+            .yssr-confirm-ok {
+                background-color: #ff9800;
+                color: white;
+            }
+        </style>
+
+        <div id="yssr-notification-container"></div>
+        
+        <div id="yssr-confirm-dialog" class="yssr-confirm-dialog">
+            <div class="yssr-confirm-content">
+                <h3>Confirmar recálculo</h3>
+                <p>¿Está seguro de que desea recalcular el total de costo para este pedido?<br>Esto sobrescribirá los valores actuales.</p>
+                <div class="yssr-confirm-buttons">
+                    <button class="yssr-confirm-cancel">Cancelar</button>
+                    <button class="yssr-confirm-ok">Aceptar</button>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('yssr-notification-container');
+            if (!container) return;
+            
+            const notification = document.createElement('div');
+            notification.className = `yssr-notification ${type}`;
+            
+            let icon = '✓';
+            if (type === 'error') icon = '❌';
+            else if (type === 'warning') icon = '⚠️';
+            
+            notification.innerHTML = `
+                <span style="margin-right: 10px; font-size: 1.2em;">${icon}</span>
+                <span style="flex-grow: 1;">${message}</span>
+                <span class="close-btn" style="margin-left: 15px; cursor: pointer; font-weight: bold; font-size: 1.2em;">&times;</span>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Forzar reflow
+            void notification.offsetWidth;
+            
+            // Mostrar notificación con transición
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+            
+            // Cerrar al hacer clic en la X
+            notification.querySelector('.close-btn').addEventListener('click', () => {
+                closeNotification(notification);
+            });
+            
+            // Cerrar automáticamente después de 5 segundos
+            const timeout = setTimeout(() => {
+                closeNotification(notification);
+            }, 5000);
+            
+            function closeNotification(element) {
+                if (!element) return;
+                clearTimeout(timeout);
+                element.style.opacity = '0';
+                element.style.transform = 'translateX(120%)';
+                
+                // Eliminar después de la animación
+                setTimeout(() => {
+                    if (element && element.parentNode) {
+                        element.parentNode.removeChild(element);
+                    }
+                }, 300);
+            }
+            
+            return notification;
         }
+        
+        function showConfirmDialog(message, onConfirm, onCancel = null) {
+            const dialog = document.getElementById('yssr-confirm-dialog');
+            const content = dialog.querySelector('.yssr-confirm-content p');
+            const btnOk = dialog.querySelector('.yssr-confirm-ok');
+            const btnCancel = dialog.querySelector('.yssr-confirm-cancel');
+            
+            content.textContent = message || content.textContent;
+            
+            const close = () => {
+                dialog.style.display = 'none';
+                document.removeEventListener('keydown', handleKeyDown);
+            };
+            
+            const handleKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    close();
+                    if (onCancel) onCancel();
+                } else if (e.key === 'Enter') {
+                    close();
+                    onConfirm();
+                }
+            };
+            
+            btnOk.onclick = () => {
+                close();
+                onConfirm();
+            };
+            
+            btnCancel.onclick = () => {
+                close();
+                if (onCancel) onCancel();
+            };
+            
+            document.addEventListener('keydown', handleKeyDown);
+            dialog.style.display = 'flex';
+        }
+        
+        function yssr_recalculate_cost(order_id, button) {
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '⌛ Calculando...';
+            }
+            showConfirmDialog(
+                '¿Está seguro de que desea recalcular el total de costo para este pedido?\nEsto sobrescribirá los valores actuales.',
+                () => {
+                    if (button) {
+                        button.disabled = true;
+                        button.textContent = '⏳ Calculando...';
+                    }
+                    
+                    // Guardar referencia al botón para usarlo después
+                    const buttonElement = button;
+                    
+                    fetch(ajaxurl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `action=yssr_recalculate_order_cost&order_id=${order_id}&nonce=<?php echo wp_create_nonce("yssr_recalc_nonce"); ?>`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification(data.data, 'success');
+                            // Recargar la página después de 2 segundos
+                            setTimeout(() => { window.location.reload(); }, 2000);
+                        } else {
+                            showNotification(data.data, 'error');
+                            // Restaurar el botón si hay error
+                            if (buttonElement) {
+                                buttonElement.disabled = false;
+                                buttonElement.innerHTML = '🔄 Recalcular Costo';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('Error al procesar la solicitud', 'error');
+                        // Restaurar el botón si hay error
+                        if (button) {
+                            button.disabled = false;
+                            button.innerHTML = '🔄 Recalcular Costo';
+                        }
+                    });
+                }
+            );
+        }
+        
         function yssr_toggle_details() {
             const details = document.getElementById('yssr-cost-details'); const button = event.target;
             if (details.style.display === 'none') { details.style.display = 'block'; button.textContent = '🙈 Ocultar Detalles'; } 
