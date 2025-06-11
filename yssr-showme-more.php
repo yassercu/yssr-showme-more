@@ -3,7 +3,7 @@
  * Plugin Name: YSSR Show Me More
  * Plugin URI: https://www.yssr.com/plugins/yssr-showme-more
  * Description: Muestra atributos ocultos de productos WooCommerce a roles específicos, calcula costos de pedidos y proporciona una interfaz de administración mejorada.
- * Version: 1.6.1
+ * Version: 1.7.0
  * Author: YSSR Team
  * Author URI: https://www.yssr.com
  * Text Domain: yssr-showme-more
@@ -14,15 +14,16 @@
  * WC tested up to: 8.0
  * License: GPL v3 or later
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
- * 
- * @package YSSR_ShowMeMore
+ * * @package YSSR_ShowMeMore
  * @category WooCommerce
  * @author YSSR Team
  */
+
 // Prevenir acceso directo
 if (!defined('ABSPATH')) {
     exit;
 }
+
 add_action(
     'before_woocommerce_init',
     function() {
@@ -31,15 +32,18 @@ add_action(
         }
     }
 );
+
 // Definir constantes del plugin
-define('WC_ROLE_ATTR_VERSION', '1.6.1');
+define('WC_ROLE_ATTR_VERSION', '1.7.0'); // Versión actualizada
 define('WC_ROLE_ATTR_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WC_ROLE_ATTR_PLUGIN_PATH', plugin_dir_path(__FILE__));
+
 /**
  * Clase principal del plugin
  */
 class WC_Role_Attributes_Plugin {
     private static ?WC_Role_Attributes_Plugin $instance = null;
+
     /**
      * Singleton
      * @return WC_Role_Attributes_Plugin
@@ -50,22 +54,28 @@ class WC_Role_Attributes_Plugin {
         }
         return self::$instance;
     }
+
     private function __construct() {
         add_action('plugins_loaded', array($this, 'init'));
         add_action('wp_ajax_yssr_recalculate_order_cost', array($this, 'ajax_recalculate_order_cost'));
     }
+
     public function init() {
         if (!class_exists('WooCommerce')) {
             add_action('admin_notices', array($this, 'woocommerce_missing_notice'));
             return;
         }
+        
         // Cargar archivos necesarios
         $this->load_dependencies();
+
         // Inicializar componentes
         $this->init_hooks();
+
         // Cargar textdomain
         load_plugin_textdomain('wc-role-attributes', false, dirname(plugin_basename(__FILE__)) . '/languages');
     }
+
     /**
      * Cargar dependencias según contexto
      */
@@ -81,6 +91,7 @@ class WC_Role_Attributes_Plugin {
         require_once WC_ROLE_ATTR_PLUGIN_PATH . 'includes/class-settings.php';
         new WC_Role_Attributes_Settings();
     }
+
     /**
      * Inicializar hooks
      */
@@ -93,7 +104,71 @@ class WC_Role_Attributes_Plugin {
         add_action('woocommerce_admin_order_data_after_billing_address', array($this, 'display_admin_order_cost_total'));
         add_action('add_meta_boxes', array($this, 'add_order_cost_metabox'));
         add_action('woocommerce_before_account_orders', array($this, 'display_inventory_summary'));
+
+        // =====================================================================
+        // == INICIO: CÓDIGO AÑADIDO PARA LA NUEVA COLUMNA DE COSTO TOTAL ==
+        // =====================================================================
+
+        // Añadir el encabezado de la columna a la lista de pedidos (compatible con HPOS)
+        add_filter('manage_woocommerce_page_wc-orders_columns', array($this, 'add_order_list_cost_column_header'));
+        // Renderizar el contenido de la celda para nuestra nueva columna
+        add_action('manage_woocommerce_page_wc-orders_custom_column', array($this, 'render_order_list_cost_column_content'), 10, 2);
+        
+        // ===================================================================
+        // == FIN: CÓDIGO AÑADIDO                                          ==
+        // ===================================================================
     }
+
+    /**
+     * ========= INICIO: NUEVA FUNCIÓN =========
+     * Agrega el encabezado de la columna de costo total a la lista de pedidos.
+     * Se activa con el filtro 'manage_woocommerce_page_wc-orders_columns'.
+     *
+     * @param array $columns Las columnas existentes en la tabla de pedidos.
+     * @return array Las columnas modificadas con la nueva columna de costo.
+     */
+    public function add_order_list_cost_column_header($columns) {
+        // Solo mostrar la columna a usuarios con los permisos adecuados
+        if (!wc_role_attr_user_can_view()) {
+            return $columns;
+        }
+
+        $new_columns = [];
+        foreach ($columns as $key => $value) {
+            $new_columns[$key] = $value;
+            // Insertar la nueva columna justo después de la columna 'order_total'
+            if ($key === 'order_total') {
+                $new_columns['yssr_total_cost'] = '💰 '. __('Costo', 'yssr-showme-more');
+            }
+        }
+        return $new_columns;
+    }
+
+    /**
+     * ========= INICIO: NUEVA FUNCIÓN =========
+     * Muestra el contenido de la columna de costo total para cada pedido en la lista.
+     * Se activa con la acción 'manage_woocommerce_page_wc-orders_custom_column'.
+     *
+     * @param string $column_name El identificador de la columna que se está renderizando.
+     * @param WC_Order $order El objeto del pedido actual.
+     */
+    public function render_order_list_cost_column_content($column_name, $order) {
+        // Comprobar si estamos en nuestra columna personalizada
+        if ('yssr_total_cost' === $column_name) {
+            // Obtener el costo total guardado en los metadatos del pedido
+            $total_costo = $order->get_meta('_yssr_total_costo');
+
+            if (is_numeric($total_costo)) {
+                // Si hay un costo numérico, mostrarlo formateado como precio
+                echo '<strong style="color: #ff9800;">' . wc_price($total_costo) . '</strong>';
+            } else {
+                // Si no se ha calculado, mostrar un mensaje por defecto
+                echo '<span style="color:#999;">' . __('N/A', 'yssr-showme-more') . '</span>';
+            }
+        }
+    }
+    // ========= FIN: NUEVAS FUNCIONES =========
+
     /**
      * Guardar total de costo del pedido - Método principal
      */
@@ -101,6 +176,7 @@ class WC_Role_Attributes_Plugin {
         error_log("YSSR Plugin: Iniciando guardado de costo para pedido #{$order->get_id()} vía 'order_created' hook.");
         $this->calculate_and_save_cost_total($order);
     }
+
     /**
      * Guardar total de costo del pedido - Método de respaldo
      */
@@ -110,6 +186,7 @@ class WC_Role_Attributes_Plugin {
         error_log("YSSR Plugin: Iniciando guardado de costo para pedido #{$order_id} vía 'payment_complete' hook.");
         $this->calculate_and_save_cost_total($order);
     }
+
     /**
      * Función centralizada para calcular y guardar el total de costo
      */
@@ -212,19 +289,7 @@ class WC_Role_Attributes_Plugin {
         $order->update_meta_data('_yssr_detalles_productos', $detalles_productos);
         $order->save();
     }
-    /**
-     * Método auxiliar para obtener el precio de costo de un producto
-     */
-    private function get_product_cost_price($product_id) {
-        $cost_fields = ['_alg_wc_cog_cost']; // Solo se usa el campo del plugin "Cost of Goods"
-        foreach ($cost_fields as $field) {
-            $cost = get_post_meta($product_id, $field, true);
-            if (!empty($cost) && is_numeric($cost)) {
-                return $cost;
-            }
-        }
-        return null;
-    }
+    
     /**
      * Muestra el cuadro de información de costos en la página de edición del pedido.
      */

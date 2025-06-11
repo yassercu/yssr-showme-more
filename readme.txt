@@ -48,6 +48,13 @@ Sí, el código sigue buenas prácticas, validación y sanitización de datos, y
 
 == Changelog ==
 
+= 1.7.0 =
+* Nuevo: Cálculo de impuesto de costo basado en la tasa aplicada a cada línea del pedido (proporcional al costo, no al precio de venta).
+* Nuevo: El impuesto de costo se guarda en el pedido y se muestra en el backend (admin, metabox, resumen de inventario) y en el frontend (carrito y checkout).
+* Nuevo: El desglose de productos en el backend muestra el impuesto de costo por cada producto.
+* Nuevo: Columna de costo total en la lista de pedidos de WooCommerce (compatible con HPOS).
+* Mejoras visuales y mayor transparencia en la gestión y visualización de costos.
+
 = 1.6.1 =
 * Actualizada la interfaz de administración con notificaciones modernas
 * Reemplazo de alertas nativas por un sistema de notificaciones personalizado
