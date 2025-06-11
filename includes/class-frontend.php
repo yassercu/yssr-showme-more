@@ -188,16 +188,19 @@ class WC_Role_Attributes_Frontend {
     public function show_cost_total_cart(): void {
         $cost_subtotal = $this->get_cart_cost_subtotal();
         $shipping_total = (float) WC()->cart->get_shipping_total();
-        $tax_total = (float) WC()->cart->get_taxes_total();
-        $cost_total = $cost_subtotal + $shipping_total + $tax_total;
+        // Calcular impuesto de costo en base a los costos y tasas del carrito
+        $cost_tax = $this->get_cart_cost_tax();
+        $cost_total = $cost_subtotal + $shipping_total + $cost_tax;
+        echo '<tr class="order-cost-tax"><th style="color:#219150;">' . esc_html__('Impuesto de Costo', 'wc-role-attributes') . '</th><td data-title="' . esc_attr__('Impuesto de Costo', 'wc-role-attributes') . '" style="color:#219150;font-weight:700;">' . wc_price($cost_tax) . '</td></tr>';
         echo '<tr class="order-cost-total"><th style="color:#219150;">' . esc_html__('Total de Costo', 'wc-role-attributes') . '</th><td data-title="' . esc_attr__('Total de Costo', 'wc-role-attributes') . '" style="color:#219150;font-weight:900;">' . wc_price($cost_total) . '</td></tr>';
     }
     // Checkout: igual que en el carrito
     public function show_cost_total_checkout(): void {
         $cost_subtotal = $this->get_cart_cost_subtotal();
         $shipping_total = (float) WC()->cart->get_shipping_total();
-        $tax_total = (float) WC()->cart->get_taxes_total();
-        $cost_total = $cost_subtotal + $shipping_total + $tax_total;
+        $cost_tax = $this->get_cart_cost_tax();
+        $cost_total = $cost_subtotal + $shipping_total + $cost_tax;
+        echo '<tr class="order-cost-tax"><th style="color:#219150;">' . esc_html__('Impuesto de Costo', 'wc-role-attributes') . '</th><td data-title="' . esc_attr__('Impuesto de Costo', 'wc-role-attributes') . '" style="color:#219150;font-weight:700;">' . wc_price($cost_tax) . '</td></tr>';
         echo '<tr class="order-cost-total"><th style="color:#219150;">' . esc_html__('Total de Costo', 'wc-role-attributes') . '</th><td data-title="' . esc_attr__('Total de Costo', 'wc-role-attributes') . '" style="color:#219150;font-weight:900;">' . wc_price($cost_total) . '</td></tr>';
     }
     // NUEVO: Obtener costo de producto
@@ -222,11 +225,27 @@ class WC_Role_Attributes_Frontend {
         }
         return $cost_subtotal;
     }
-    // NUEVO: Calcular total de costo (subtotal de costo + envío + impuestos)
-    private function get_cart_cost_total(): float {
-        $cost_subtotal = $this->get_cart_cost_subtotal();
-        $shipping_total = WC()->cart->get_shipping_total();
-        $tax_total = WC()->cart->get_taxes_total();
-        return $cost_subtotal + $shipping_total + $tax_total;
+    // NUEVO: Calcular impuesto de costo en el carrito
+    private function get_cart_cost_tax(): float {
+        $cost_tax = 0;
+        foreach (WC()->cart->get_cart() as $cart_item) {
+            $cost = wc_role_attr_get_product_cost($cart_item['product_id']);
+            $quantity = $cart_item['quantity'];
+            $costo_linea = $cost * $quantity;
+            $item = $cart_item['data'];
+            // Obtener tasas de impuestos de la línea
+            $taxes = $cart_item['line_tax_data']['total'] ?? [];
+            $line_subtotal = $cart_item['line_subtotal'] ?? 0;
+            $line_tax_sum = 0;
+            if (!empty($taxes) && $line_subtotal > 0) {
+                foreach ($taxes as $tax_id => $tax_amount) {
+                    $proporcion = $costo_linea / $line_subtotal;
+                    $tax_for_cost = $tax_amount * $proporcion;
+                    $line_tax_sum += $tax_for_cost;
+                }
+            }
+            $cost_tax += $line_tax_sum;
+        }
+        return wc_format_decimal($cost_tax, wc_get_price_decimals());
     }
 }

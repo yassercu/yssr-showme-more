@@ -129,6 +129,7 @@ class WC_Role_Attributes_Plugin {
 
         $total_costo_productos = 0;
         $detalles_productos = [];
+        $total_costo_tax = 0;
 
         foreach ($order->get_items() as $item_id => $item) {
             $product_id = $item->get_product_id();
@@ -145,14 +146,37 @@ class WC_Role_Attributes_Plugin {
             $quantity = $item->get_quantity();
             $product_name = $item->get_name();
 
+            // Calcular impuesto de costo por línea
+            $line_cost_total = 0;
+            $line_cost_tax = 0;
             if (!empty($cost_price) && is_numeric($cost_price)) {
                 $costo_linea = floatval($cost_price) * intval($quantity);
                 $total_costo_productos += $costo_linea;
+                $line_cost_total = $costo_linea;
+
+                // Obtener tasas de impuestos de la línea
+                $taxes = $item->get_taxes();
+                $tax_rates = $taxes['total'] ?? [];
+                $line_tax_sum = 0;
+                if (!empty($tax_rates)) {
+                    foreach ($tax_rates as $tax_id => $tax_amount) {
+                        // Proporción del impuesto sobre el subtotal de la línea
+                        $line_subtotal = $item->get_subtotal();
+                        if ($line_subtotal > 0) {
+                            $proporcion = $costo_linea / $line_subtotal;
+                            $tax_for_cost = $tax_amount * $proporcion;
+                            $line_tax_sum += $tax_for_cost;
+                        }
+                    }
+                }
+                $line_cost_tax = $line_tax_sum;
+                $total_costo_tax += $line_cost_tax;
                 $detalles_productos[] = [
                     'name' => $product_name,
                     'quantity' => $quantity,
                     'cost_price' => $cost_price,
                     'line_total' => $costo_linea,
+                    'cost_tax' => $line_cost_tax,
                     'product_id' => $id_to_check
                 ];
             } else {
@@ -161,6 +185,7 @@ class WC_Role_Attributes_Plugin {
                     'quantity' => $quantity,
                     'cost_price' => 0,
                     'line_total' => 0,
+                    'cost_tax' => 0,
                     'product_id' => $id_to_check,
                     'error' => 'Sin precio de costo'
                 ];
@@ -168,24 +193,21 @@ class WC_Role_Attributes_Plugin {
             }
         }
 
-        // Validar y formatear valores con precisión decimal
-        $tax_total = floatval($order->get_total_tax());
-
         // Formatear con precisión decimal según WooCommerce
         $total_costo_productos = wc_format_decimal($total_costo_productos, wc_get_price_decimals());
-        $tax_total = wc_format_decimal($tax_total, wc_get_price_decimals());
+        $total_costo_tax = wc_format_decimal($total_costo_tax, wc_get_price_decimals());
 
         // Registrar valores para depuración
         error_log("YSSR Plugin: Cálculo para pedido #{$order_id}");
         error_log("Costo productos: " . $total_costo_productos);
-        error_log("Impuestos: " . $tax_total);
+        error_log("Impuesto de costo: " . $total_costo_tax);
 
-        $total_final = $total_costo_productos + $tax_total;
+        $total_final = $total_costo_productos + $total_costo_tax;
 
         // Guardar en el pedido
         $order->update_meta_data('_yssr_total_costo', $total_final);
         $order->update_meta_data('_yssr_costo_productos', $total_costo_productos);
-        $order->update_meta_data('_yssr_costo_impuestos', $tax_total);
+        $order->update_meta_data('_yssr_costo_tax', $total_costo_tax);
         $order->update_meta_data('_yssr_costo_calculado_fecha', current_time('mysql'));
         $order->update_meta_data('_yssr_detalles_productos', $detalles_productos);
         $order->save();
@@ -209,17 +231,21 @@ class WC_Role_Attributes_Plugin {
     public function display_admin_order_cost_total($order): void {
         if (!current_user_can('manage_woocommerce')) return;
         $total_costo = $order->get_meta('_yssr_total_costo');
+        $costo_tax = $order->get_meta('_yssr_costo_tax');
         $fecha_calculo = $order->get_meta('_yssr_costo_calculado_fecha');
         $detalles = $order->get_meta('_yssr_detalles_productos');
         echo '<div class="yssr-admin-cost-info" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-left: 4px solid #ff9800; border-radius: 4px;">';
         echo '<h4 style="margin: 0 0 10px 0; color: #ff9800;">📊 Información de Costos YSSR</h4>';
         if (is_numeric($total_costo)) {
             echo '<p><strong>Total de Costo:</strong> <span style="font-size: 18px; color: #ff9800; font-weight: bold;">' . wc_price($total_costo) . '</span></p>';
-        echo '<button type="button" class="button button-small" onclick="yssr_recalculate_cost(' . $order->get_id() . ', this)" style="margin-right: 10px;">🔄 Recalcular Costo</button>';
+            if (is_numeric($costo_tax)) {
+                echo '<p><strong>Impuesto de Costo:</strong> <span style="font-size: 16px; color: #219150; font-weight: bold;">' . wc_price($costo_tax) . '</span></p>';
+            }
+            echo '<button type="button" class="button button-small" onclick="yssr_recalculate_cost(' . $order->get_id() . ', this)" style="margin-right: 10px;">🔄 Recalcular Costo</button>';
             if (!empty($fecha_calculo)) echo '<p><small><strong>Calculado el:</strong> ' . date_i18n('d/m/Y H:i:s', strtotime($fecha_calculo)) . '</small></p>';
         } else {
             echo '<p><strong>Total de Costo:</strong> <span style="color: #999;">No calculado</span></p>';
-        echo '<button type="button" class="button button-small" onclick="yssr_recalculate_cost(' . $order->get_id() . ', this)" style="margin-right: 10px;">🔄 Recalcular Costo</button>';
+            echo '<button type="button" class="button button-small" onclick="yssr_recalculate_cost(' . $order->get_id() . ', this)" style="margin-right: 10px;">🔄 Recalcular Costo</button>';
         }
 
         if (!empty($detalles) && is_array($detalles)) {
@@ -229,6 +255,9 @@ class WC_Role_Attributes_Plugin {
                 echo '<div style="margin-bottom: 8px; padding: 8px; background: #f9f9f9; border-radius: 3px; font-size:12px;">';
                 echo '<strong>' . esc_html($detalle['name']) . '</strong><br>';
                 echo 'Cant: ' . esc_html($detalle['quantity']) . ' | Costo U: ' . wc_price($detalle['cost_price']) . ' | Total: ' . wc_price($detalle['line_total']);
+                if (isset($detalle['cost_tax']) && is_numeric($detalle['cost_tax'])) {
+                    echo '<br><span style="color:#219150;">Imp. Costo: ' . wc_price($detalle['cost_tax']) . '</span>';
+                }
                 if (!empty($detalle['error'])) echo '<br><span style="color: #dc3545;">⚠ ' . esc_html($detalle['error']) . '</span>';
                 echo '</div>';
             }
@@ -517,9 +546,11 @@ class WC_Role_Attributes_Plugin {
         $order = ($post_or_order_object instanceof WP_Post) ? wc_get_order($post_or_order_object->ID) : $post_or_order_object;
         if (!$order) return;
         $total_costo = $order->get_meta('_yssr_total_costo');
+        $costo_tax = $order->get_meta('_yssr_costo_tax');
         echo '<p><strong>Total de Costo:</strong><br>';
         if (is_numeric($total_costo)) echo '<span style="font-size: 1.2em; color: #ff9800; font-weight: bold;">' . wc_price($total_costo) . '</span>';
         else echo '<span style="color: #999;">No calculado</span>';
+        if (is_numeric($costo_tax)) echo '<br><span style="font-size: 1em; color: #219150; font-weight: bold;">Impuesto de Costo: ' . wc_price($costo_tax) . '</span>';
         echo '</p>';
     }
     /**
@@ -539,12 +570,15 @@ class WC_Role_Attributes_Plugin {
         $total_general = 0;
         foreach ($orders as $order) {
             $total_costo = $order->get_meta('_yssr_total_costo');
+            $costo_tax = $order->get_meta('_yssr_costo_tax');
             if (!is_numeric($total_costo)) { $this->calculate_and_save_cost_total($order); $total_costo = $order->get_meta('_yssr_total_costo'); }
             if (is_numeric($total_costo)) $total_general += floatval($total_costo);
             echo '<tr><td><a href="' . esc_url($order->get_view_order_url()) . '">#' . $order->get_order_number() . '</a></td>';
             echo '<td><time datetime="' . $order->get_date_created()->date('c') . '">' . $order->get_date_created()->date_i18n('d M Y') . '</time></td>';
             echo '<td>' . wc_get_order_status_name($order->get_status()) . '</td>';
-            echo '<td style="font-weight:bold; color:#ff9800;">' . (is_numeric($total_costo) ? wc_price($total_costo) : 'N/A') . '</td></tr>';
+            echo '<td style="font-weight:bold; color:#ff9800;">' . (is_numeric($total_costo) ? wc_price($total_costo) : 'N/A');
+            if (is_numeric($costo_tax)) echo '<br><span style="font-size:0.95em; color:#219150;">Imp. Costo: ' . wc_price($costo_tax) . '</span>';
+            echo '</td></tr>';
         }
         echo '</tbody><tfoot><tr><th colspan="3" style="text-align:right;">Total General del Mes:</th>';
         echo '<td style="font-weight:bold; color:#ff9800; font-size:1.2em;">' . wc_price($total_general) . '</td></tr></tfoot></table></div></div>';
